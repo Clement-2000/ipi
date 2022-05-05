@@ -3,7 +3,7 @@ CL - DisplayInterface
     FN - end
     FN - exit
     FN - exitWithFatalError (error <Error>)
-    FN - loadGraphic (graphic_name <str>, graphic <GraphicLoader>)
+    FN - loadGraphic (graphic_name <str>, graphic <AbstractGraphic>)
     FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
     FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
     FN - deleteGraphic (name <str>)
@@ -11,10 +11,25 @@ CL - DisplayInterface
     FN - replace graphic (name <str>, new_graphic_name <str>)
     FN - updateDisplay
 
-CL - GraphicLoader
-    FN - __init__ (file <str>)
-    FN - load
-    FN - parse => <arr[<arr[<str>]>]>
+CL - AbstractGraphic
+    FN - getGraphic => <arr[<arr[<str>]>]>
+
+CL - FileGraphic -> <AbstractGraphic>
+    FN - load(file <str>)
+
+CL - BoxGraphic -> <AbstractGraphic>
+    FN - make(width <int>, height <int>, foreground_color <int>, background_color <int>, style <int> = 0)
 
 CL - EventHandler
-    FN - addKeyEvent(name <str>, key <chr>, repeat)
+    FN - addKeyEvent(name <str>, key <chr>, repeat <bool>)
+
+*******************************************************************************
+
+CL - name : Class
+-> : Extends
+FN - name : Function
+(args...) : Arguments of function
+<type> : Type of variable
+=> : returns
+
+*******************************************************************************
