@@ -88,16 +88,16 @@ CL - __main__
               ********************
               * .ci binary file  *
               ********************
-         
+
 *******************************************************************************
 
  +---------------------------------------------------------------------------+
  | function                                    | writen | test | test passed |
  +---------------------------------------------+--------+------+-------------+
- | DisplayInterface.start                      |        |      |             |
- | DisplayInterface.end                        |        |      |             |
- | DisplayInterface.exit                       |        |      |             |
- | DisplayInterface.exitWithFatalError         |        |      |             |
+ | DisplayInterface.start                      | X      |      |             |
+ | DisplayInterface.end                        | X      |      |             |
+ | DisplayInterface.exit                       | X      |      |             |
+ | DisplayInterface.exitWithFatalError         | X      |      |             |
  | DisplayInterface.loadGraphic                |        |      |             |
  | DisplayInterface.addGraphic                 |        |      |             |
  | DisplayInterface.deleteGraphic              |        |      |             |
