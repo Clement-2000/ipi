@@ -51,7 +51,7 @@ CL - __main__
 
 *******************************************************************************
 
-    CL    Class
+    CL   Class
     ->   Extends
     FN   Function
 (arg,)   Arguments of function
