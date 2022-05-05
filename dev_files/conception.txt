@@ -1,35 +1,56 @@
 CL - DisplayInterface
     FN - start
+        * Initialises the Text User Interface display
     FN - end
+        * Shuts properly down the TUI and puts the terminal to its initial stats,
+        * this function MUST be executed before leaving the program
     FN - exit
+        * Same as end function, but terminates the program
     FN - exitWithFatalError (error <Error>)
+        * Same as exit function, but prints a fatal error in the terminal before 
+        * terminating the program for debug purposes.
     FN - loadGraphic (graphic_name <str>, graphic <AbstractGraphic>)
+        * Loads a graphic class in the TUI handler and puts a name on it 
+        * for further use
     FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
-    FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
+        * Adds a previously imported graphic to the display with specified 
+        * x and y
     FN - deleteGraphic (name <str>)
+        * Removes graphic from display
     FN - moveGraphic (name <str>, new_x <str>, new_y <str>)
-    FN - replace graphic (name <str>, new_graphic_name <str>)
+        * Changes position of graphic on display
+    FN - replaceGraphic (name <str>, new_graphic_name <str>)
+        * Replaces graphic, usually used for animation
     FN - updateDisplay
+        * Updates display from buffer, all changes will take effect
 
 CL - AbstractGraphic
     FN - getGraphic => <arr[<arr[<str>]>]>
+        * Returns the graphic for use in the TUI handler
 
 CL - FileGraphic -> <AbstractGraphic>
     FN - load(file <str>)
+        * Loads a .ci file containing graphic
 
 CL - BoxGraphic -> <AbstractGraphic>
-    FN - make(width <int>, height <int>, foreground_color <int>, background_color <int>, style <int> = 0)
+    FN - make(width <int>, height <int>, foreground_color <int>, 
+    background_color <int>, style <int> = 0)
+        * Creates a box
+        * style : 0 = single outline
+        *         1 = double outline
 
 CL - EventHandler
-    FN - addKeyEvent(name <str>, key <chr>, repeat <bool>)
+    FN - addEvent(name <str>, trigger <array[<char>]>, repeat <bool>,
+        * function <callable>, args <array[<mixed>]>)
+        *     Adds an event that is triggered by a keypress
 
 *******************************************************************************
 
-CL - name : Class
--> : Extends
-FN - name : Function
-(args...) : Arguments of function
-<type> : Type of variable
-=> : returns
+    CL    Class
+    ->   Extends
+    FN   Function
+(arg,)   Arguments of function
+<type>   Type of variable
+    =>   returns
 
 *******************************************************************************
