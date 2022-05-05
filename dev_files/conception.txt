@@ -11,11 +11,10 @@ CL - DisplayInterface
     FN - replace graphic (name <str>, new_graphic_name <str>)
     FN - updateDisplay
 
-CL : GraphicLoader
+CL - GraphicLoader
     FN - __init__ (file <str>)
     FN - load
     FN - parse => <arr[<arr[<str>]>]>
 
-CL : EventHandler
-    FN - addEvent
-
+CL - EventHandler
+    FN - addKeyEvent(name <str>, key <chr>, repeat)
