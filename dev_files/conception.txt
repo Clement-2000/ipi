@@ -1,0 +1,21 @@
+CL - DisplayInterface
+    FN - start
+    FN - end
+    FN - exit
+    FN - exitWithFatalError (error <Error>)
+    FN - loadGraphic (graphic_name <str>, graphic <GraphicLoader>)
+    FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
+    FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
+    FN - deleteGraphic (name <str>)
+    FN - moveGraphic (name <str>, new_x <str>, new_y <str>)
+    FN - replace graphic (name <str>, new_graphic_name <str>)
+    FN - updateDisplay
+
+CL : GraphicLoader
+    FN - __init__ (file <str>)
+    FN - load
+    FN - parse => <arr[<arr[<str>]>]>
+
+CL : EventHandler
+    FN - addEvent
+
