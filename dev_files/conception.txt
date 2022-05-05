@@ -33,7 +33,7 @@ CL - FileGraphic -> <AbstractGraphic>
         * Loads a .ci file containing graphic
 
 CL - BoxGraphic -> <AbstractGraphic>
-    FN - make(width <int>, height <int>, foreground_color <int>, 
+    FN - makeBox(width <int>, height <int>, foreground_color <int>, 
     background_color <int>, style <int> = 0)
         * Creates a box
         * style : 0 = single outline
@@ -44,6 +44,11 @@ CL - EventHandler
         * function <callable>, args <array[<mixed>]>)
         *     Adds an event that is triggered by a keypress
 
+CL - __main__
+    FN - start
+    FN - exit
+    FN - loop(time)
+
 *******************************************************************************
 
     CL    Class
@@ -52,5 +57,34 @@ CL - EventHandler
 (arg,)   Arguments of function
 <type>   Type of variable
     =>   returns
+
+*******************************************************************************
+
+ +---------------------------------------------------------------------------+
+ | function                                    | writen | test | test passed |
+ +---------------------------------------------+--------+------+-------------+
+ | DisplayInterface.start                      |        |      |             |
+ | DisplayInterface.end                        |        |      |             |
+ | DisplayInterface.exit                       |        |      |             |
+ | DisplayInterface.exitWithFatalError         |        |      |             |
+ | DisplayInterface.loadGraphic                |        |      |             |
+ | DisplayInterface.addGraphic                 |        |      |             |
+ | DisplayInterface.deleteGraphic              |        |      |             |
+ | DisplayInterface.moveGraphic                |        |      |             |
+ | DisplayInterface.replaceGraphic             |        |      |             |
+ | DisplayInterface.updateDisplay              |        |      |             |
+ +---------------------------------------------+--------+------+-------------+
+ | FileGraphic.getGraphic                      |        |      |             |
+ | FileGraphic.load                            |        |      |             |
+ +---------------------------------------------+--------+------+-------------+
+ | BoxGraphic.getGraphic                       |        |      |             |
+ | BoxGraphic.makeBox                          |        |      |             |
+ +---------------------------------------------+--------+------+-------------+
+ | EventHandler.addEvent                       |        |      |             |
+ +---------------------------------------------+--------+------+-------------+
+ | __main__.init                               |        |      |             |
+ | __main__.loop                               |        |      |             |
+ | __main__.exit                               |        |      |             |
+ +---------------------------------------------+--------+------+-------------+
 
 *******************************************************************************
