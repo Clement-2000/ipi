@@ -1,4 +1,5 @@
-import sys, os, termios
+from this import d
+import time, sys, os, termios, asyncio
 
 with open("debug.txt", "w") as debug_file:
     debug_file.write("")
@@ -23,8 +24,8 @@ BOX_STYLES = [
 class Display():
     def __init__(self):
         self._status = False
-        self._width = 0
-        self._height = 0
+        self._width  = os.get_terminal_size()[0]
+        self._height = os.get_terminal_size()[1]
 
         self._console_text = ""
         self._show_console = False
@@ -118,6 +119,7 @@ class Display():
         for element_name in self._displayed_elements:
             element = self._displayed_elements[element_name]
             loaded_element = self._loaded_graphics[element.graphic_name]
+            graphic = loaded_element.getGraphic()
             
             if element.x + loaded_element.width > 0 and element.y + loaded_element.height > 0 \
                and element.x < self._width and element.y < self._height :
@@ -133,25 +135,21 @@ class Display():
                     truncate_right = element.x + loaded_element.width - self._width
                 if element.y + loaded_element.height > self._height:
                     truncate_bottom = element.y + loaded_element.height - self._height
+                
+                loop_x = range(truncate_left, loaded_element.width - truncate_right)
+                loop_y = range(truncate_top, loaded_element.height - truncate_bottom)
 
-                for y in range(truncate_top, loaded_element.height - truncate_bottom):
+                for y in loop_y:
                     global_y = y + element.y
 
-                    for x in range(truncate_left, loaded_element.width - truncate_right):
+                    for x in loop_x:
                         global_x = x + element.x
 
-                        self._display_buffer[global_y][global_x] = loaded_element.getGraphic()[y][x][:3]
-
-        for y in range(self._height):
-            for x in range(self._width):
-                char = self._display_buffer[y][x]
-                self._string_buffer += f"\33[38;5;{char[1]}m\33[48;5;{char[2]}m{char[0]}"
-
-            self._string_buffer += "\n"
-        self._string_buffer = self._string_buffer[:-1]
+                        self._display_buffer[global_y][global_x] = graphic[y][x][:3]
+        
+        self._string_buffer = "\n".join("".join(f"\33[38;5;{char[1]}m\33[48;5;{char[2]}m{char[0]}" for char in line) for line in self._display_buffer)
 
         sys.stdout.write(self._string_buffer)
-        sys.stdout.write("\33 [ 1 ; 1 H")
 
     def showConsole(self) -> None:
         self._show_console = True
@@ -220,3 +218,67 @@ class BoxGraphic(AbstractGraphic):
         self._graphic = [[[BOX_STYLES[self._style][0], self._background_color, self._foreground_color, False, False]] + [[BOX_STYLES[self._style][1], self._background_color, self._foreground_color, False, False]] * (self.width-2) + [[BOX_STYLES[self._style][2], self._background_color, self._foreground_color, False, False]]] + \
                         [[[BOX_STYLES[self._style][3], self._background_color, self._foreground_color, False, False]] + [[BOX_STYLES[self._style][4], self._background_color, self._foreground_color, False, False]] * (self.width-2) + [[BOX_STYLES[self._style][5], self._background_color, self._foreground_color, False, False]]] * (self.height - 2) + \
                         [[[BOX_STYLES[self._style][6], self._background_color, self._foreground_color, False, False]] + [[BOX_STYLES[self._style][7], self._background_color, self._foreground_color, False, False]] * (self.width-2) + [[BOX_STYLES[self._style][8], self._background_color, self._foreground_color, False, False]]]
+
+class EventHandler():
+    def __init__(self):
+        self._init_clock = 0
+        self._clock = 0
+        self._loop_count = 0
+        self._events = {}
+        self._loop = False
+
+    def addEvent(self, name :str, trigger :str, options :list, action :callable) -> None:
+        # delay [time millisecs]
+        # repeat [time millisecs, number, nodelay]
+        # key_down [keys]
+        # key [keys]
+        # loop
+        if trigger == "delay":
+            pass
+
+        self._events[name] = Event(trigger, options, action)
+
+    def removeEvent(self, name :str) -> None:
+        del self._events[name]
+    
+    def loop(self):
+        for event in self._events: 
+            if event.trigger == "loop":
+                pass
+
+            if event.trigger == "delay" and event.options[0]:
+                event.action()
+                self.removeEvent(event.name)
+
+        self.loop_count += 1
+    
+    def start(self):
+        self._init_clock = time.time()
+        self._clock = self._init_clock
+
+        for event in self._events: 
+            if event.trigger == "start":
+                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                self.removeEvent(event.name)
+    
+    def end(self):
+        self._loop = False
+
+        for event in self._events: 
+            if event.trigger == "end":
+                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                self.removeEvent(event.name)
+
+class Event():
+    def __init__(self, trigger :str, options :list, action :callable):
+        self.trigger = trigger
+        self.options = options
+        self.action = action
+        self.loop_count = 0
+
+class EventFiringInfo():
+    def __init__(self, init_clock, clock, loop_count, event_loop_count):
+        self.init_clock = init_clock
+        self.clock = clock
+        self.loop_count = loop_count
+        self.event_loop_count = event_loop_count

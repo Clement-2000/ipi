@@ -46,18 +46,16 @@ def testDisplay():
     display.loadGraphic("test_box_1", Engine.BoxGraphic(20, 1, 0, 133, 0))
     display.loadGraphic("test_box_2", Engine.BoxGraphic(20, 3, 0, 26, 0))
 
-    display.addElement("1", "test_box_0", 5, 5)
-    display.addElement("2", "test_box_1", 5, 8)
-    display.addElement("3", "test_box_2", 5, 9)
-
+    display.loadGraphic("surround_box", Engine.BoxGraphic(display.getWidth() - 4, display.getHeight() - 2, 8, 0, 7))
+    display.addElement("surround_box", "surround_box", 2, 1)
     display.update()
 
-    for n in range(10):
+    for n in range(50):
         display.addElement("1", "test_box_0", n, 5)
         display.addElement("2", "test_box_1", n, 8)
         display.addElement("3", "test_box_2", n, 9)
         display.update()
-        time.sleep(.25)
+        time.sleep(0.04)
 
     display.end()
 
@@ -67,7 +65,9 @@ try :
 
     print(test_result)
 
-except : 
+except Exception as e : 
         display.end()
         print(test_result)
+        print("")
         traceback.print_exc()
+        print(e.__traceback__)
