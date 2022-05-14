@@ -26,7 +26,7 @@ def testGraphics():
 
     assertEquals(graphic, expected)
 
-    box_graphic = Engine.BoxGraphic(10, 5, 202, 16, 6)
+    box_graphic = Engine.BoxGraphic(10, 5, 202, 16, 7)
 
     box = box_graphic.getGraphic()
 
@@ -41,13 +41,23 @@ def testDisplay():
     display.start()
     assertEquals(display.getStatus(), True)
     time.sleep(.1)
+    
+    display.loadGraphic("test_box_0", Engine.BoxGraphic(20, 3, 0, 163, 0))
+    display.loadGraphic("test_box_1", Engine.BoxGraphic(20, 1, 0, 133, 0))
+    display.loadGraphic("test_box_2", Engine.BoxGraphic(20, 3, 0, 26, 0))
 
-    display.loadGraphic("test_box_1", Engine.BoxGraphic(10, 5, 1, 0, 6))
-    time.sleep(.1)
+    display.addElement("1", "test_box_0", 5, 5)
+    display.addElement("2", "test_box_1", 5, 8)
+    display.addElement("3", "test_box_2", 5, 9)
 
-    display.addElement("test_1", "test_box_1", 5, 5)
     display.update()
-    time.sleep(1)
+
+    for n in range(10):
+        display.addElement("1", "test_box_0", n, 5)
+        display.addElement("2", "test_box_1", n, 8)
+        display.addElement("3", "test_box_2", n, 9)
+        display.update()
+        time.sleep(.25)
 
     display.end()
 

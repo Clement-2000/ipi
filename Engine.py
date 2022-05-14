@@ -1,11 +1,16 @@
 import sys, os, termios
 
+with open("debug.txt", "w") as debug_file:
+    debug_file.write("")
+
 debug_file = open("debug.txt", "a")
 
 def debug(text, end:str="\n"):
     debug_file.write(str(text) + end)
+    debug_file.flush()
 
 BOX_STYLES = [
+    "         ",
     "┌─┐│ │└─┘",
     "┌╌┐╎ ╎└╌┘",
     "╭─╮│ │╰─╯",
@@ -80,7 +85,7 @@ class Display():
         self._status = False
     
     def clearBuffer(self) -> None:
-        self._display_buffer = [[[" ", 0, 0]] * self._width] * self._height
+        self._display_buffer = [[[" ", 0, 0] for _ in range(self._width)] for __ in range(self._height)]
         self._string_buffer = ""
     
     def loadGraphic(self, name, element :str) -> None:
@@ -130,15 +135,13 @@ class Display():
                     truncate_bottom = element.y + loaded_element.height - self._height
 
                 for y in range(truncate_top, loaded_element.height - truncate_bottom):
-
                     global_y = y + element.y
 
                     for x in range(truncate_left, loaded_element.width - truncate_right):
                         global_x = x + element.x
 
                         self._display_buffer[global_y][global_x] = loaded_element.getGraphic()[y][x][:3]
-        
-        """
+
         for y in range(self._height):
             for x in range(self._width):
                 char = self._display_buffer[y][x]
@@ -149,7 +152,6 @@ class Display():
 
         sys.stdout.write(self._string_buffer)
         sys.stdout.write("\33 [ 1 ; 1 H")
-        """
 
     def showConsole(self) -> None:
         self._show_console = True
