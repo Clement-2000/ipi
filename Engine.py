@@ -1,5 +1,9 @@
-from this import d
-import time, sys, os, termios, asyncio
+import time
+import sys
+import os
+import termios
+import asyncio
+import pynput
 
 with open("debug.txt", "w") as debug_file:
     debug_file.write("")
@@ -223,51 +227,71 @@ class EventHandler():
     def __init__(self):
         self._init_clock = 0
         self._clock = 0
+        self._last_loop_clock = 0
         self._loop_count = 0
         self._events = {}
         self._loop = False
 
     def addEvent(self, name :str, trigger :str, options :list, action :callable) -> None:
-        # delay [time millisecs]
-        # repeat [time millisecs, number, nodelay]
-        # key_down [keys]
-        # key [keys]
+        # delay [delay millisecs]
+        # repeat [gap millisecs, delay millisecs, number, ]
+        # key_down [keys, gap millisecs]
+        # key_press [keys, is_down]
         # loop
-        if trigger == "delay":
-            pass
-
         self._events[name] = Event(trigger, options, action)
 
     def removeEvent(self, name :str) -> None:
         del self._events[name]
-    
-    def loop(self):
-        for event in self._events: 
-            if event.trigger == "loop":
-                pass
 
-            if event.trigger == "delay" and event.options[0]:
-                event.action()
-                self.removeEvent(event.name)
+    async def start(self):
 
-        self.loop_count += 1
-    
-    def start(self):
-        self._init_clock = time.time()
-        self._clock = self._init_clock
+        self._init_clock = self._clock = round(time.time()*1000)
 
         for event in self._events: 
-            if event.trigger == "start":
+            if event.trigger == "init":
                 event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
                 self.removeEvent(event.name)
-    
-    def end(self):
+        
+        self._loop = True
+
+        while self._loop : 
+            self._clock = round(time.time()*1000)
+            time_gap = self._clock - self._last_loop_clock
+
+            for event in self._events: 
+                if event.trigger == "loop":
+                    event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+
+                elif event.trigger == "repeat":
+                    event.options[1] -= time_gap
+                    if event.options[1] <= 0 : 
+                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                        event.options[1] = event.options[0]
+                        if event.options[2] > 1 :
+                            event.options[2] -= 1
+                        elif event.options[2] == 1 :
+                            self.removeEvent(event.name)
+                
+                elif event.trigger == "delay":
+                    event.options[1] -= time_gap
+                    if event.options[1] <= 0 : 
+                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                        self.removeEvent(event.name)
+
+                elif event.trigger == "delay" and event.options[0]:
+                    event.action()
+                    self.removeEvent(event.name)
+
+            self.loop_count += 1
+            self._last_loop_clock = self._clock
+        
+        for event in self._events: 
+            if event.trigger == "exit":
+                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                self.removeEvent(event.name)
+            
+    def stop(self):
         self._loop = False
-
-        for event in self._events: 
-            if event.trigger == "end":
-                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                self.removeEvent(event.name)
 
 class Event():
     def __init__(self, trigger :str, options :list, action :callable):
