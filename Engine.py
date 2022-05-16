@@ -3,7 +3,6 @@ import sys
 import os
 import termios
 import asyncio
-import pynput
 
 with open("debug.txt", "w") as debug_file:
     debug_file.write("")
@@ -259,24 +258,29 @@ class EventHandler():
         del self._events[name]
 
     def start(self):
+        asyncio.run(self.start2())
+    
+    async def start2(self):
         self._loop = True
 
-        asyncio.run(self.asyncLoop())
+        task = asyncio.create_task(self.asyncLoop())
+
+        await task
 
     async def asyncLoop(self):
 
         self._init_clock = self._clock = round(time.time()*1000)
 
-        for event in self._events: 
+        for event_name, event in self._events.items() : 
             if event.trigger == "init":
                 event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                self.removeEvent(event.name)
+                self.removeEvent(event_name)
 
         while self._loop : 
             self._clock = round(time.time()*1000)
             time_gap = self._clock - self._last_loop_clock
 
-            for event in self._events: 
+            for event_name, event in self._events.items() : 
                 if event.trigger == "loop":
                     event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
 
@@ -288,29 +292,29 @@ class EventHandler():
                         if event.options[2] > 1 :
                             event.options[2] -= 1
                         elif event.options[2] == 1 :
-                            self.removeEvent(event.name)
+                            self.removeEvent(event_name)
                 
                 elif event.trigger == "delay":
                     event.options[1] -= time_gap
                     if event.options[1] <= 0 : 
                         event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                        self.removeEvent(event.name)
+                        self.removeEvent(event_name)
 
                 elif event.trigger == "delay" and event.options[0]:
                     event.action()
-                    self.removeEvent(event.name)
+                    self.removeEvent(event_name)
 
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
-            self.loop_count += 1
+            self._loop_count += 1
             self._last_loop_clock = self._clock
         
-        for event in self._events: 
+        for event_name, event in self._events.items() : 
             if event.trigger == "exit":
                 event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                self.removeEvent(event.name)
+                self.removeEvent(event_name)
             
-    def stop(self):
+    def end(self):
         self._loop = False
 
 class Event():

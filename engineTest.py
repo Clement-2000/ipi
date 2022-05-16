@@ -76,6 +76,8 @@ def testEventHandler():
 
     handler.start()
 
+    handler.end()
+
 try :
     #testGraphics()
     #testDisplay()
