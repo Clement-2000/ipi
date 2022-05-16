@@ -79,6 +79,8 @@ class Display():
         self._status = True
     
     def end(self) -> None: 
+        self.purge()
+
         sys.stdout.write("\33[?47l\33[u")
         sys.stdout.flush()
         
@@ -88,6 +90,19 @@ class Display():
         termios.tcsetattr(fd, termios.TCSANOW, new)
 
         self._status = False
+    
+    def clear(self):
+        self._displayed_elements = {}
+    
+    def purge(self):
+        self._console_text = ""
+        self._show_console = False
+
+        self._loaded_graphics = {}
+        self._displayed_elements = {}
+
+        self._display_buffer = []
+        self._string_buffer = ""
     
     def clearBuffer(self) -> None:
         self._display_buffer = [[[" ", 0, 0] for _ in range(self._width)] for __ in range(self._height)]
@@ -106,7 +121,7 @@ class Display():
         self._displayed_elements[name].x = new_x
         self._displayed_elements[name].y = new_y
     
-    def shitElement(self, name :str, shift_x :int, shift_y :int) -> None:
+    def shiftElement(self, name :str, shift_x :int, shift_y :int) -> None:
         self._displayed_elements[name].x += shift_x
         self._displayed_elements[name].y += shift_y
     
@@ -243,7 +258,12 @@ class EventHandler():
     def removeEvent(self, name :str) -> None:
         del self._events[name]
 
-    async def start(self):
+    def start(self):
+        self._loop = True
+
+        asyncio.run(self.asyncLoop())
+
+    async def asyncLoop(self):
 
         self._init_clock = self._clock = round(time.time()*1000)
 
@@ -251,8 +271,6 @@ class EventHandler():
             if event.trigger == "init":
                 event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
                 self.removeEvent(event.name)
-        
-        self._loop = True
 
         while self._loop : 
             self._clock = round(time.time()*1000)
@@ -281,6 +299,8 @@ class EventHandler():
                 elif event.trigger == "delay" and event.options[0]:
                     event.action()
                     self.removeEvent(event.name)
+
+                await asyncio.sleep(1)
 
             self.loop_count += 1
             self._last_loop_clock = self._clock

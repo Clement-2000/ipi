@@ -50,23 +50,41 @@ def testDisplay():
     display.addElement("surround_box", "surround_box", 2, 1)
     display.update()
 
-    for n in range(50):
+    for n in range(25):
+        display.loadGraphic("surround_box", Engine.BoxGraphic(display.getWidth() - 4, display.getHeight() - 2, 8, 0, 7))
+
         display.addElement("1", "test_box_0", n, 5)
         display.addElement("2", "test_box_1", n, 8)
         display.addElement("3", "test_box_2", n, 9)
         display.update()
         time.sleep(0.04)
 
+    display.clear()
+    display.update()
+
+    time.sleep(1)
+
     display.end()
 
+def test(event):
+    print("test")
+
+def testEventHandler():
+    handler = Engine.EventHandler()
+
+    handler.addEvent("test_start_event", "start", [], test)
+
+    handler.start()
+
 try :
-    testGraphics()
-    testDisplay()
+    #testGraphics()
+    #testDisplay()
+    testEventHandler()
 
     print(test_result)
 
 except Exception as e : 
-        display.end()
+        #display.end()
         print(test_result)
         print("")
         traceback.print_exc()
