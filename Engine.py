@@ -252,11 +252,6 @@ class EventHandler():
         pass
 
     def addEvent(self, name :str, event :Event) -> None:
-        # delay [delay millisecs]
-        # repeat [gap millisecs, delay millisecs, number, ]
-        # key_down [keys, gap millisecs]
-        # key_press [keys, is_down]
-        # loop
         self._event_buffer[name] = Event(trigger, options, action, args)
 
     def removeEvent(self, name :str) -> None:
@@ -351,7 +346,7 @@ class Engine():
     async def main(self):
 
         self.event_handler.addEvent("test_event", "start", [], self.test)
-        self.event_handler.addEvent("end_test", "end", [], self.printEnd)
+        self.event_handler.addEvent("end_test", "end", [], self.printEnd)git
 
         task = asyncio.create_task(self.event_handler.main())
 

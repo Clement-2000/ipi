@@ -1,3 +1,3 @@
-# IPI__Tommy
+# IPI
 
 Projet IPI 2022
