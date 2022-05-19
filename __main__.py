@@ -1,9 +1,5 @@
 import Engine
 
-def setup():
-    pass
+app = Engine.App()
 
-def loop():
-    pass
-
-
+app.run()
