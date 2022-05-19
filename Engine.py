@@ -244,85 +244,121 @@ class EventHandler():
         self._clock = 0
         self._last_loop_clock = 0
         self._loop_count = 0
+        self._event_buffer = {}
         self._events = {}
-        self._loop = False
+        self._loop = True
+    
+    def keyboardUpdate(self):
+        pass
 
-    def addEvent(self, name :str, trigger :str, options :list, action :callable) -> None:
+    def addEvent(self, name :str, event :Event) -> None:
         # delay [delay millisecs]
         # repeat [gap millisecs, delay millisecs, number, ]
         # key_down [keys, gap millisecs]
         # key_press [keys, is_down]
         # loop
-        self._events[name] = Event(trigger, options, action)
+        self._event_buffer[name] = Event(trigger, options, action, args)
 
     def removeEvent(self, name :str) -> None:
-        del self._events[name]
+        del self._event_buffer[name]
+    
+    def updateEvents(self):
+        self._events = self._event_buffer.copy()
 
-    def start(self):
-        self._loop = True
-
-        asyncio.run(self.asyncLoop())
-
-    async def asyncLoop(self):
+    async def main(self):
 
         self._init_clock = self._clock = round(time.time()*1000)
 
-        for event in self._events: 
-            if event.trigger == "init":
-                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                self.removeEvent(event.name)
+        self.updateEvents()
+        for event_name, event in self._events.items(): 
+            if event.trigger == "start":
+                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count, event.args))
+                self.removeEvent(event_name)
+
+        self._clock = self._last_loop_clock = round(time.time()*1000)
 
         while self._loop : 
             self._clock = round(time.time()*1000)
             time_gap = self._clock - self._last_loop_clock
 
-            for event in self._events: 
+            self.updateEvents()
+            for event_name, event in self._events.items(): 
                 if event.trigger == "loop":
-                    event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                    event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count, event.args))
 
                 elif event.trigger == "repeat":
                     event.options[1] -= time_gap
                     if event.options[1] <= 0 : 
-                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
+                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count, event.args))
                         event.options[1] = event.options[0]
                         if event.options[2] > 1 :
                             event.options[2] -= 1
                         elif event.options[2] == 1 :
-                            self.removeEvent(event.name)
+                            self.removeEvent(event_name)
                 
                 elif event.trigger == "delay":
-                    event.options[1] -= time_gap
-                    if event.options[1] <= 0 : 
-                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                        self.removeEvent(event.name)
+                    event.options[0] -= time_gap
+                    if event.options[0] <= 0 : 
+                        event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count, event.args))
+                        self.removeEvent(event_name)
 
                 elif event.trigger == "delay" and event.options[0]:
                     event.action()
-                    self.removeEvent(event.name)
+                    self.removeEvent(event_name)
 
-                await asyncio.sleep(1)
+            await asyncio.sleep(0.04)
 
-            self.loop_count += 1
+            self._loop_count += 1
             self._last_loop_clock = self._clock
         
-        for event in self._events: 
-            if event.trigger == "exit":
-                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count))
-                self.removeEvent(event.name)
+        self.updateEvents()
+        for event_name, event in self._events.items(): 
+            if event.trigger == "end":
+                event.action(EventFiringInfo(self._init_clock, self._clock, self._loop_count, event.loop_count, event.args))
             
-    def stop(self):
+    def end(self):
         self._loop = False
 
 class Event():
-    def __init__(self, trigger :str, options :list, action :callable):
+    def __init__(self, trigger :str, options :list, action :callable, args = None):
         self.trigger = trigger
         self.options = options
         self.action = action
         self.loop_count = 0
+        self.args = args
 
 class EventFiringInfo():
-    def __init__(self, init_clock, clock, loop_count, event_loop_count):
+    def __init__(self, init_clock :int, clock :int, loop_count :int, event_loop_count :int, args):
         self.init_clock = init_clock
         self.clock = clock
         self.loop_count = loop_count
         self.event_loop_count = event_loop_count
+        self.args = args
+
+class Engine():
+    def __init__(self):
+        self.event_handler = EventHandler()
+
+    def test(self, e):
+        print("Test")
+
+    def end(self, e):
+        self.event_handler.end()
+    
+    def printEnd(self, e):
+        print("END")
+
+    async def main(self):
+
+        self.event_handler.addEvent("test_event", "start", [], self.test)
+        self.event_handler.addEvent("end_test", "end", [], self.printEnd)
+
+        task = asyncio.create_task(self.event_handler.main())
+
+        self.event_handler.addEvent("test", "repeat", [1000, 0, 0], self.test)
+        self.event_handler.addEvent("end", "delay", [900], self.end)
+
+        await task
+    
+    def run(self):
+        asyncio.run(self.main())
