@@ -71,7 +71,6 @@ class Display():
         self.height = os.get_terminal_size()[1]
         self.clearBuffer()
         for element in self.displayed_elements:
-            element = self.displayed_elements
             loaded_element = self.loaded_graphics[element.graphic_name]
             graphic = loaded_element.graphic
             
@@ -169,6 +168,23 @@ class BoxGraphic(AbstractGraphic):
                        [[[self.BOX_STYLES[self.style][3], self.background_color, self.foreground_color, False, False]] + [[self.BOX_STYLES[self.style][4], self.background_color, self.foreground_color, False, False]] * (self.width-2) + [[self.BOX_STYLES[self.style][5], self.background_color, self.foreground_color, False, False]]] * (self.height - 2) + \
                        [[[self.BOX_STYLES[self.style][6], self.background_color, self.foreground_color, False, False]] + [[self.BOX_STYLES[self.style][7], self.background_color, self.foreground_color, False, False]] * (self.width-2) + [[self.BOX_STYLES[self.style][8], self.background_color, self.foreground_color, False, False]]]
 
+class TextGraphic(AbstractGraphic):
+    def __init__(self, text :str, background_color :int, foreground_color :int): 
+        super().__init__()
+
+        self.width = len(text)
+        self.height = 1
+
+        self.foreground_color = foreground_color
+        self.background_color = background_color
+    
+        graphic = [[]]
+
+        for char in text :
+            graphic[0].append([char, self.background_color, self.foreground_color, False, False])
+        
+        self.graphic = graphic
+
 class Event():
     def __init__(self, priority :int, trigger :str, options :list, action :callable, args = None):
         self.priority = trigger
@@ -235,7 +251,7 @@ class EventHandler():
                 if event.trigger == "loop":
                     event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
 
-                elif event.trigger == "repeat":
+                elif event.trigger == "repeat": # [gap, delay]
                     event.options[1] -= time_gap
                     if event.options[1] <= 0 : 
                         event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
@@ -274,23 +290,36 @@ class App():
         self.display = Display()
     
     def start(self, e):
+
+        self.map = DisplayElement("map", -745, -65)
+
         self.display.start()
-        self.display.loadGraphic("test", FileGraphic("demo.cg"))
-        self.display.loadGraphic("box", BoxGraphic(10, 5, 0, 15, 6))
-        self.display.addElement(DisplayElement("test", 1, 1))
-        self.display.addElement(DisplayElement("box", 10, 1))
+        self.display.loadGraphic("box", BoxGraphic(50, 9, 15, 0, 6))
+        self.display.loadGraphic("box_text", TextGraphic("DÉMO", 11, 9))
+        self.display.loadGraphic("map", FileGraphic("map.cg"))
+
+        self.display.addElement(self.map)
+        self.display.addElement(DisplayElement("box", round(self.display.width/2-25), round(self.display.height/2-4.5)))
+        self.display.addElement(DisplayElement("box_text", round(self.display.width/2-2) - 1, round(self.display.height/2) - 1))
+
         self.display.update()
     
     def end(self, e):
         self.event_handler.end()
         self.display.end()
+    
+    def anim(self, e):
+        self.map.x += 1
+        self.display.update()
 
     async def main(self):
         self.event_handler.addEvent(Event(0, "start", [], self.start))
 
         task = asyncio.create_task(self.event_handler.main())
 
-        self.event_handler.addEvent(Event(0, "delay", [1000], self.end))
+        self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.anim))
+
+        self.event_handler.addEvent(Event(0, "delay", [10000], self.end))
 
         await task
     
