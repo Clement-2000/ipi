@@ -1,2 +1,5 @@
 import Engine
-import asyncio
+
+app = Engine.App()
+
+app.run()
