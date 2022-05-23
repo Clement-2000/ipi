@@ -25,17 +25,6 @@ class Display():
 
         self.display_buffer = []
         self.string_buffer = ""
-
-        self.BOX_STYLES = [
-            "         ",
-            "┌─┐│ │└─┘",
-            "┌╌┐╎ ╎└╌┘",
-            "╭─╮│ │╰─╯",
-            "╭╌╮╎ ╎╰╌╯",
-            "┏━┓┃ ┃┗━┛",
-            "┏╍┓╏ ╏┗╍┛",
-            "╔═╗║ ║╚═╝"
-        ]
     
     def start(self) -> None: 
         sys.stdout.write("\33[s\33[?47h\33[2J\33[H")
@@ -65,7 +54,7 @@ class Display():
         self.display_buffer = [[[" ", 0, 0] for _ in range(self.width)] for __ in range(self.height)]
         self.string_buffer = ""
     
-    def loadGraphic(self, name, element :str) -> None:
+    def loadGraphic(self, name, element) -> None:
         self.loaded_graphics[name] = element
     
     def unloadGraphic(self, graphic_name :str) -> None:
@@ -82,8 +71,8 @@ class Display():
         self.width  = os.get_terminal_size()[0]
         self.height = os.get_terminal_size()[1]
         self.clearBuffer()
-        for element_name in self.displayed_elements:
-            element = self.displayed_elements[element_name]
+        for element in self.displayed_elements:
+            element = self.displayed_elements
             loaded_element = self.loaded_graphics[element.graphic_name]
             graphic = loaded_element.graphic
             
@@ -160,6 +149,17 @@ class FileGraphic(AbstractGraphic):
 class BoxGraphic(AbstractGraphic):
     def __init__(self, width :int, height :int, background_color :int, foreground_color :int, style :int): 
         super().__init__()
+        self.BOX_STYLES = [
+            "         ",
+            "┌─┐│ │└─┘",
+            "┌╌┐╎ ╎└╌┘",
+            "╭─╮│ │╰─╯",
+            "╭╌╮╎ ╎╰╌╯",
+            "┏━┓┃ ┃┗━┛",
+            "┏╍┓╏ ╏┗╍┛",
+            "╔═╗║ ║╚═╝"
+        ]
+
         self.width = width
         self.height = height
         self.foreground_color = foreground_color
@@ -276,8 +276,11 @@ class App():
     
     def start(self, e):
         self.display.start()
-        self.display.loadGraphic("test", "test_char_graphic.cg")
-        self.display.addElement(DisplayElement())
+        self.display.loadGraphic("test", FileGraphic("demo.cg"))
+        self.display.loadGraphic("box", BoxGraphic(10, 5, 0, 15, 6))
+        self.display.addElement(DisplayElement("test", 1, 1))
+        self.display.addElement(DisplayElement("box", 10, 1))
+        self.display.update()
     
     def end(self, e):
         self.event_handler.end()
