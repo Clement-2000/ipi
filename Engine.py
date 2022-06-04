@@ -214,7 +214,11 @@ class EventHandler():
         self.events_to_add = []
         self.events_to_delete = []
         self.events = []
+        self.pressed_keys = []
         self.loop = True
+
+        with Listener(on_press=self.keyDown, on_release=self.keyUp) as listener:
+            listener.join()
 
     def addEvent(self, event :Event) -> None:
         self.events_to_add.append(event)
@@ -272,6 +276,11 @@ class EventHandler():
                 elif event.trigger == "delay" and event.options[0]:
                     event.action()
                     self.removeEvent(event)
+                
+                elif (event.trigger == "key" or event.trigger == "key_repeat") and (not set(event.options).isdisjoint(self.pressed_keys)): 
+                    event.action()
+                    if event.trigger == "key":
+                        self.removeEvent(event)
 
             await asyncio.sleep(1/FRAMERATE)
 
@@ -284,7 +293,12 @@ class EventHandler():
                 event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
     
     def keyDown(self, key):
-        pass
+        if not key in self.pressed_keys: 
+            self.pressed_keys.append(key)
+    
+    def keyUp(self, key):
+        if key in self.pressed_keys : 
+            self.pressed_keys.remove(key)
             
     def end(self):
         self.loop = False
@@ -326,7 +340,7 @@ class App():
 
         self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.loop))
 
-        self.event_handler.addEvent(Event(0, "key", [10000], self.end))
+        self.event_handler.addEvent(Event(0, "key", ["q"], self.end))
 
         await task
     
