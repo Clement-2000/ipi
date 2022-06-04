@@ -1,8 +1,10 @@
 import time
 import sys
 import os
-import termios
 import asyncio
+from pynput.keyboard import Key, Listener
+
+FRAMERATE = 5
 
 with open("debug.txt", "w") as debug_file:
     debug_file.write("")
@@ -271,7 +273,7 @@ class EventHandler():
                     event.action()
                     self.removeEvent(event)
 
-            await asyncio.sleep(0.04)
+            await asyncio.sleep(1/FRAMERATE)
 
             self.loop_count += 1
             self.last_loop_clock = self.clock
@@ -280,6 +282,9 @@ class EventHandler():
         for event in self.events: 
             if event.trigger == "end":
                 event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
+    
+    def keyDown(self, key):
+        pass
             
     def end(self):
         self.loop = False
@@ -291,35 +296,37 @@ class App():
     
     def start(self, e):
 
-        self.map = DisplayElement("map", -745, -65)
-
         self.display.start()
         self.display.loadGraphic("box", BoxGraphic(50, 9, 15, 0, 6))
         self.display.loadGraphic("box_text", TextGraphic("DÉMO", 11, 9))
         self.display.loadGraphic("map", FileGraphic("map.cg"))
 
+        self.map = DisplayElement("map", -745, -65)
         self.display.addElement(self.map)
         self.display.addElement(DisplayElement("box", round(self.display.width/2-25), round(self.display.height/2-4.5)))
         self.display.addElement(DisplayElement("box_text", round(self.display.width/2-2) - 1, round(self.display.height/2) - 1))
-
-        self.display.update()
     
+    def loop(self, e):
+        self.map.x += 1
+
     def end(self, e):
         self.event_handler.end()
         self.display.end()
-    
-    def anim(self, e):
-        self.map.x += 1
+
+    def displayUpdate(self, e):
         self.display.update()
 
     async def main(self):
-        self.event_handler.addEvent(Event(0, "start", [], self.start))
+        self.event_handler.addEvent(Event(1, "start", [], self.start))
 
         task = asyncio.create_task(self.event_handler.main())
 
-        self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.anim))
+        self.event_handler.addEvent(Event(-1, "loop", [100, 0, 0], self.displayUpdate))
 
-        self.event_handler.addEvent(Event(0, "delay", [10000], self.end))
+
+        self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.loop))
+
+        self.event_handler.addEvent(Event(0, "key", [10000], self.end))
 
         await task
     
