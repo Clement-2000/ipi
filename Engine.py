@@ -1,10 +1,14 @@
+from cmath import log
 import time
 import sys
 import os
 import asyncio
-from pynput.keyboard import Key, Listener
 
-FRAMERATE = 5
+import select
+import tty 
+import termios
+
+FRAMERATE = 20
 
 with open("debug.txt", "w") as debug_file:
     debug_file.write("")
@@ -28,6 +32,7 @@ class Display():
         self.string_buffer = ""
     
     def start(self) -> None: 
+        tty.setcbreak(sys.stdin.fileno())
         sys.stdout.write("\33[s\33[?47h\33[2J\33[H")
         sys.stdout.flush()
 
@@ -35,14 +40,18 @@ class Display():
     
     def end(self) -> None: 
         self.purge()
-
         sys.stdout.write("\33[?47l\33[u")
         sys.stdout.flush()
+        fd = sys.stdin.fileno()
+        
+        old = termios.tcgetattr(fd)
+        old[3] = old[3] | termios.ECHO
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
         self.status = False
     
     def clear(self):
-        self.displayed_elements = {}
+        self.displayed_elements = []
     
     def purge(self):
         self.loaded_graphics = {}
@@ -217,9 +226,6 @@ class EventHandler():
         self.pressed_keys = []
         self.loop = True
 
-        with Listener(on_press=self.keyDown, on_release=self.keyUp) as listener:
-            listener.join()
-
     def addEvent(self, event :Event) -> None:
         self.events_to_add.append(event)
 
@@ -252,6 +258,11 @@ class EventHandler():
             self.clock = round(time.time()*1000)
             time_gap = self.clock - self.last_loop_clock
 
+            pressed_keys = ""
+            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []) and event.options[0]:
+                pressed_keys =  sys.stdin.read(1)
+            termios.tcflush(sys.stdin,termios.TCIFLUSH)
+
             self.updateEvents()
             for event in self.events: 
                 if event.trigger == "loop":
@@ -277,10 +288,8 @@ class EventHandler():
                     event.action()
                     self.removeEvent(event)
                 
-                elif (event.trigger == "key" or event.trigger == "key_repeat") and (not set(event.options).isdisjoint(self.pressed_keys)): 
-                    event.action()
-                    if event.trigger == "key":
-                        self.removeEvent(event)
+                elif (event.trigger == "key") and event.options[0] in pressed_keys: 
+                    event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
 
             await asyncio.sleep(1/FRAMERATE)
 
@@ -307,42 +316,90 @@ class App():
     def __init__(self):
         self.event_handler = EventHandler()
         self.display = Display()
+
+        self.fish_level = 0
     
     def start(self, e):
 
         self.display.start()
-        self.display.loadGraphic("box", BoxGraphic(50, 9, 15, 0, 6))
-        self.display.loadGraphic("box_text", TextGraphic("DÉMO", 11, 9))
-        self.display.loadGraphic("map", FileGraphic("map.cg"))
+
+        self.display.loadGraphic("map", FileGraphic("assets/map.cg"))
+
+        self.display.loadGraphic("fish_0", BoxGraphic( 8, 3, 15, 0, 4))
+        self.display.loadGraphic("fish_1", BoxGraphic(10, 3, 15, 0, 4))
+        self.display.loadGraphic("fish_2", BoxGraphic(15, 5, 15, 0, 4))
+        self.display.loadGraphic("fish_3", BoxGraphic(17, 7, 15, 0, 4))
+
+        self.display.loadGraphic("fish_0_label", TextGraphic("MINI FISH", 11, 9))
+        self.display.loadGraphic("fish_1_label", TextGraphic("PETI FISH", 11, 9))
+        self.display.loadGraphic("fish_2_label", TextGraphic("MOYEN FISH", 11, 9))
+        self.display.loadGraphic("fish_3_label", TextGraphic("GRO FISH", 11, 9))
 
         self.map = DisplayElement("map", -745, -65)
+        self.fish = DisplayElement("fish_0", 0, 0)
+        self.fish_label = DisplayElement("fish_0_label", 0, 0)
+
         self.display.addElement(self.map)
-        self.display.addElement(DisplayElement("box", round(self.display.width/2-25), round(self.display.height/2-4.5)))
-        self.display.addElement(DisplayElement("box_text", round(self.display.width/2-2) - 1, round(self.display.height/2) - 1))
-    
-    def loop(self, e):
-        self.map.x += 1
+        self.display.addElement(self.fish)
+        self.display.addElement(self.fish_label)
 
     def end(self, e):
         self.event_handler.end()
         self.display.end()
 
     def displayUpdate(self, e):
+        
+        self.fish.x = round((self.display.width - self.display.loaded_graphics[self.fish.graphic_name].width)/2)
+        self.fish.y = round((self.display.height - self.display.loaded_graphics[self.fish.graphic_name].height)/2 + 1)
+
+        self.fish_label.x = round((self.display.width - self.display.loaded_graphics[self.fish_label.graphic_name].width)/2)
+        self.fish_label.y = round(self.display.height/2 + 1)
+
         self.display.update()
 
-    async def main(self):
+    async def init(self):
         self.event_handler.addEvent(Event(1, "start", [], self.start))
 
         task = asyncio.create_task(self.event_handler.main())
 
-        self.event_handler.addEvent(Event(-1, "loop", [100, 0, 0], self.displayUpdate))
-
+        self.event_handler.addEvent(Event(-1, "loop", [], self.displayUpdate))
 
         self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.loop))
 
-        self.event_handler.addEvent(Event(0, "key", ["q"], self.end))
+        self.event_handler.addEvent(Event(0, "key", ["p"], self.end))
+
+        self.event_handler.addEvent(Event(0, "key", ["z"], self.move, [0, 1]))
+        self.event_handler.addEvent(Event(0, "key", ["s"], self.move, [0, -1]))
+        self.event_handler.addEvent(Event(0, "key", ["q"], self.move, [1, 0]))
+        self.event_handler.addEvent(Event(0, "key", ["d"], self.move, [-1, 0]))
+
+        self.event_handler.addEvent(Event(0, "key", ["9"], self.levelUp))
+        self.event_handler.addEvent(Event(0, "key", ["3"], self.levelDown))
 
         await task
     
+    def loop(self, e):
+        pass
+    
+    def move(self, e):
+        self.map.x += e.args[0] * 2
+        self.map.y += e.args[1]
+    
+    def updateFishLevel(self):
+        self.fish.graphic_name = f"fish_{self.fish_level}"
+        self.fish_label.graphic_name = f"fish_{self.fish_level}_label"
+
+    def levelUp(self, e):
+        if self.fish_level < 3:
+            self.fish_level += 1
+            self.updateFishLevel()
+        
+        self.updateFishLevel
+
+    def levelDown(self, e):
+        if self.fish_level > 0:
+            self.fish_level -= 1
+            self.updateFishLevel()
+    
     def run(self):
-        asyncio.run(self.main())
+        asyncio.run(self.init())
