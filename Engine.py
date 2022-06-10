@@ -1,4 +1,3 @@
-from cmath import log
 import time
 import sys
 import os
@@ -64,8 +63,8 @@ class Display():
         self.display_buffer = [[[" ", 0, 0] for _ in range(self.width)] for __ in range(self.height)]
         self.string_buffer = ""
     
-    def loadGraphic(self, name, element) -> None:
-        self.loaded_graphics[name] = element
+    def loadGraphic(self, graphic_name :str, element) -> None:
+        self.loaded_graphics[graphic_name] = element
     
     def unloadGraphic(self, graphic_name :str) -> None:
         del self.loaded_graphics[graphic_name]
@@ -197,8 +196,8 @@ class TextGraphic(AbstractGraphic):
         self.graphic = graphic
 
 class Event():
-    def __init__(self, priority :int, trigger :str, options :list, action :callable, args = None):
-        self.priority = trigger
+    def __init__(self, priority :int, trigger :str, options :list, action :callable, args:any = None):
+        self.priority = priority
         self.trigger = trigger
         self.options = options
         self.action = action
@@ -207,7 +206,7 @@ class Event():
         self.loop_count = 0
 
 class EventFiringInfo():
-    def __init__(self, init_clock :int, clock :int, loop_count :int, event_loop_count :int, args):
+    def __init__(self, init_clock :int, clock :int, loop_count :int, event_loop_count :int, args:any):
         self.init_clock = init_clock
         self.clock = clock
         self.loop_count = loop_count
@@ -223,7 +222,7 @@ class EventHandler():
         self.events_to_add = []
         self.events_to_delete = []
         self.events = []
-        self.pressed_keys = []
+        self.pressed_keys = ""
         self.loop = True
 
     def addEvent(self, event :Event) -> None:
@@ -259,8 +258,8 @@ class EventHandler():
             time_gap = self.clock - self.last_loop_clock
 
             pressed_keys = ""
-            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []) and event.options[0]:
-                pressed_keys =  sys.stdin.read(1)
+            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+                pressed_keys = sys.stdin.read(1)
             termios.tcflush(sys.stdin,termios.TCIFLUSH)
 
             self.updateEvents()
@@ -300,14 +299,6 @@ class EventHandler():
         for event in self.events: 
             if event.trigger == "end":
                 event.action(EventFiringInfo(self.init_clock, self.clock, self.loop_count, event.loop_count, event.args))
-    
-    def keyDown(self, key):
-        if not key in self.pressed_keys: 
-            self.pressed_keys.append(key)
-    
-    def keyUp(self, key):
-        if key in self.pressed_keys : 
-            self.pressed_keys.remove(key)
             
     def end(self):
         self.loop = False
@@ -348,7 +339,6 @@ class App():
         self.display.end()
 
     def displayUpdate(self, e):
-        
         self.fish.x = round((self.display.width - self.display.loaded_graphics[self.fish.graphic_name].width)/2)
         self.fish.y = round((self.display.height - self.display.loaded_graphics[self.fish.graphic_name].height)/2 + 1)
 
@@ -356,27 +346,6 @@ class App():
         self.fish_label.y = round(self.display.height/2 + 1)
 
         self.display.update()
-
-    async def init(self):
-        self.event_handler.addEvent(Event(1, "start", [], self.start))
-
-        task = asyncio.create_task(self.event_handler.main())
-
-        self.event_handler.addEvent(Event(-1, "loop", [], self.displayUpdate))
-
-        self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.loop))
-
-        self.event_handler.addEvent(Event(0, "key", ["p"], self.end))
-
-        self.event_handler.addEvent(Event(0, "key", ["z"], self.move, [0, 1]))
-        self.event_handler.addEvent(Event(0, "key", ["s"], self.move, [0, -1]))
-        self.event_handler.addEvent(Event(0, "key", ["q"], self.move, [1, 0]))
-        self.event_handler.addEvent(Event(0, "key", ["d"], self.move, [-1, 0]))
-
-        self.event_handler.addEvent(Event(0, "key", ["9"], self.levelUp))
-        self.event_handler.addEvent(Event(0, "key", ["3"], self.levelDown))
-
-        await task
     
     def loop(self, e):
         pass
@@ -393,13 +362,32 @@ class App():
         if self.fish_level < 3:
             self.fish_level += 1
             self.updateFishLevel()
-        
-        self.updateFishLevel
 
     def levelDown(self, e):
         if self.fish_level > 0:
             self.fish_level -= 1
             self.updateFishLevel()
+
+    async def init(self):
+        self.event_handler.addEvent(Event(1, "start", [], self.start))
+
+        task = asyncio.create_task(self.event_handler.main())
+
+        self.event_handler.addEvent(Event(-1, "loop", [], self.displayUpdate))
+
+        self.event_handler.addEvent(Event(0, "repeat", [100, 0, 0], self.loop))
+
+        self.event_handler.addEvent(Event(-2, "key", ["\x1b"], self.end))
+
+        self.event_handler.addEvent(Event(0, "key", ["z"], self.move, [0, 1]))
+        self.event_handler.addEvent(Event(0, "key", ["s"], self.move, [0, -1]))
+        self.event_handler.addEvent(Event(0, "key", ["q"], self.move, [1, 0]))
+        self.event_handler.addEvent(Event(0, "key", ["d"], self.move, [-1, 0]))
+
+        self.event_handler.addEvent(Event(0, "key", ["9"], self.levelUp))
+        self.event_handler.addEvent(Event(0, "key", ["3"], self.levelDown))
+
+        await task
     
     def run(self):
         asyncio.run(self.init())

@@ -1,124 +1,150 @@
-CL - DisplayInterface
+CL - Display
+    * Display handler class
     FN - start
         * Initialises the Text User Interface display
     FN - end
         * Shuts properly down the TUI and puts the terminal to its initial stats,
         * this function MUST be executed before leaving the program
-    FN - exit
-        * Same as end function, but terminates the program
-    FN - exitWithFatalError (error <Error>)
-        * Same as exit function, but prints a fatal error in the terminal before 
-        * terminating the program for debug purposes.
+    FN - clear
+        * Clears the screen
+    FN - purge
+        * Clears the screen, all the internal buffers, and the loaded elements
+    FN - clearBuffer
+        * Resets the internal buffers
     FN - loadGraphic (graphic_name <str>, graphic <AbstractGraphic>)
         * Loads a graphic class in the TUI handler and puts a name on it 
         * for further use
-    FN - addGraphic (name <str>, graphic_name <str>, x <int>, y <int>)
-        * Adds a previously imported graphic to the display with specified 
-        * x and y
-    FN - deleteGraphic (name <str>)
-        * Removes graphic from display
-    FN - moveGraphic (name <str>, new_x <str>, new_y <str>)
-        * Changes position of graphic on display
-    FN - replaceGraphic (name <str>, new_graphic_name <str>)
-        * Replaces graphic, usually used for animation
+    FN - unloadGraphic (graphic_name <str>, graphic <AbstractGraphic>)
+        * Unloads a graphic and removes them from the memory
+    FN - addElement (element <DisplayElement>)
+        * Adds a previously imported element to the display with position 
+        * specified in DisplayElement object
+    FN - removeElement (element <DisplayElement>)
+        * Removes element from display
     FN - updateDisplay
-        * Updates display from buffer, all changes will take effect
+        * Generates a frame and displays it on the screen
 
-CL - AbstractGraphic
-    FN - getGraphic => <arr[<arr[<str>]>]>
-        * Returns the graphic for use in the TUI handler
+CL - DisplayElement
+    * Class containing the information to position an element on display
+    CR - (graphic_name <str>, x <int>, y <int>)
 
-CL - FileGraphic -> <AbstractGraphic>
+CL -  AbstractGraphic 
+    * Skeleton class for representing a graphic to then display on screen
+
+CL - FileGraphic -> <AbstractGraphic> 
+    * Class to load and generate a graphic from an external source file
     FN - load(file <str>)
-        * Loads a .ci file containing graphic
+        * Loads a .cg file containing graphic
+        * NB : cg stands for Char Graphic
 
 CL - BoxGraphic -> <AbstractGraphic>
-    FN - makeBox(width <int>, height <int>, foreground_color <int>, 
+    * Class to generate a parametric box
+    CR - (width <int>, height <int>, foreground_color <int>, 
     background_color <int>, style <int> = 0)
-        * Creates a box
-        * style : 0 = single outline
-        *         1 = double outline
+        * Creates a parametric box
+        * Color system is 256 color
+        * See ANSI escape codes color on wikipedia for a color chart
+
+CL - TextGraphic -> <AbstractGraphic>
+    * Class to generate parametric text
+    CR - (text <str>, background_color <int>, foreground_color <int>)
+        * Creates parametric text
+        * Color system is 256 color
+        * See ANSI escape codes color on wikipedia for a color chart
+
+CL - Event
+    * Represents an event to use with the event handler
+    CR - (priority <int>, trigger <str>, options <list>, action <callable>, args <any> =None)
+
+CL - EventFiringInfo
+    * Class that is automatically passed to the action of an even when fired
+    * this class contains various info to use in the action, as well as the custom parameters
+    
+    CR - (init_clock <int>, clock <int>, loop_count <int>, event_loop_count <int>, args <any>)
 
 CL - EventHandler
-    FN - addEvent(name <str>, trigger <array[<char>]>, repeat <bool>,
-        * function <callable>, args <array[<mixed>]>)
-        *     Adds an event that is triggered by a keypress
+    FN - addEvent(event <Event>)
+        * Adds an event to the engine execution list
+    FN - removeEvent(event <Event>)
+        * Removes an event from the execution list
+    FN - updateEvents
+        * Updates the events list to add and removes the events that were added or deleted
+    FN - main
+        * This is the main event handler logic, the heart of the app, it handles and
+        * executes the events at the right moment and in the right order
+    FN - end
+        * This function terminates the event handler to close the app
 
 CL - __main__
     FN - start
-    FN - exit
-    FN - loop(time)
+        * EVENT - Sets up the display handler, and loads the graphics
+    FN - end
+        * EVENT - Terminates the game properly and puts the console to its initial state
+    FN - displayUpdate
+        * EVENT - Function triggered at every frame to generate an new frame. Also recalulates
+        * the position and size of the elements that depends on the window size
+    FN - loop
+        * EVENT - Function triggered at a constant time interval of 100 milliseconds
+    FN - move
+        * EVENT - Function triggered when ZQSD keys are pressed to move the player in the map
+    FN - updateFishLevel
+        * EVENT - Updated the fish graphics from its level
+    FN - levelUp
+        * EVENT - Levels up the fish
+    FN - levelDown
+        * EVENT - Levels down the fish
+    AFN - init
+        * EVENT - Starts off the game and sets up the events
+    FN - run
+        * EVENT - Starts the game
+
+LEGEND : 
+        CL   Class
+        ->   Extends
+        CR   Constructor
+        FN   Function
+       AFN   Asynchronous Function
+    (arg,)   Arguments of function
+        =    Default value of parameter
+    <type>   Type of variable
+        =>   Returns
 
 *******************************************************************************
 
-    CL   Class
-    ->   Extends
-    FN   Function
-(arg,)   Arguments of function
-<type>   Type of variable
-    =>   returns
-
-*******************************************************************************
-
-                            +------------------+
-                            |     __main__     |
-                            +------------------+
-                                     ^
-                                     |
-                            +------------------+
-                            |       Main       |
-                            +------------------+
-                                     ^
-                                     |
-                            +------------------+
-                            |   EventHandler   |
-                            +------------------+
-                                     ^
-                                     |
-                            +------------------+
-                            | DisplayInterface |
-                            +------------------+
-                                     ^
-                                     |
-                            +------------------+     +------------------+
-                            | AbstractGraphic  |<----|       Menu       |
-                            +------------------+     +------------------+
-                               ^            ^             ^
-                               |            |             |
-              +------------------+        +------------------+
-              |   FileGraphic    |        |    BoxGraphic    |
-              +------------------+        +------------------+
-                       ^
-                       |
-              ********************
-              * .ci binary file  *
-              ********************
-
-*******************************************************************************
-
- +---------------------------------------------------------------------------+
- | function                                    | writen | test | test passed |
- +---------------------------------------------+--------+------+-------------+
- | DisplayInterface.start                      | X      |      |             |
- | DisplayInterface.end                        | X      |      |             |
- | DisplayInterface.exit                       | X      |      |             |
- | DisplayInterface.exitWithFatalError         | X      |      |             |
- | DisplayInterface.loadGraphic                |        |      |             |
- | DisplayInterface.addGraphic                 |        |      |             |
- | DisplayInterface.deleteGraphic              |        |      |             |
- | DisplayInterface.moveGraphic                |        |      |             |
- | DisplayInterface.replaceGraphic             |        |      |             |
- | DisplayInterface.updateDisplay              |        |      |             |
- +---------------------------------------------+--------+------+-------------+
- | FileGraphic.getGraphic                      |        |      |             |
- | FileGraphic.load                            |        |      |             |
- +---------------------------------------------+--------+------+-------------+
- | BoxGraphic.getGraphic                       |        |      |             |
- | BoxGraphic.makeBox                          |        |      |             |
- +---------------------------------------------+--------+------+-------------+
- | EventHandler.addEvent                       |        |      |             |
- +---------------------------------------------+--------+------+-------------+
- | __main__.init                               |        |      |             |
- | __main__.loop                               |        |      |             |
- | __main__.exit                               |        |      |             |
- +---------------------------------------------+--------+------+-------------+
+  __[__main__.py]____________________________________________________________
+ [                                                                           ]
+ [                          +------------------+                             ]
+ [                          |     __main__     |                             ]
+ [                          +------------------+                             ]
+ [                                   ^                                       ]
+ [__[app.py]_________________________|_______________________________________]
+ [                                   |                                       ]
+ [                          +------------------+                             ]
+ [                          |       App        |                             ]
+ [                          +------------------+                             ]
+ [                                   ^                                       ]
+ [                                   |                                       ]
+ [                          +------------------+    ********************     ]
+ [                          |   EventHandler   |<---*  Keyboard Input  *     ]
+ [                          +------------------+    ********************     ]
+ [                                   ^                                       ]
+ [                                   |                                       ]
+ [  ********************    +------------------+                             ]
+ [  *       Screen     *<---| DisplayInterface |                             ]
+ [  ********************    +------------------+                             ]
+ [                                   ^                                       ]
+ [                                   |                                       ]
+ [                          +------------------+      +------------------+   ]
+ [                          | AbstractGraphic  |<-----|    TextGraphic   |   ]
+ [                          +------------------+      +------------------+   ]
+ [                             ^            ^                                ]
+ [                             |            |                                ]
+ [            +------------------+        +------------------+               ]
+ [            |   FileGraphic    |        |    BoxGraphic    |               ]
+ [            +------------------+        +------------------+               ]
+ [                     ^                                                     ]
+ [                     |                                                     ]
+ [            ********************                                           ]
+ [            * .cg binary file  *                                           ]
+ [            ********************                                           ]
+ [___________________________________________________________________________]
