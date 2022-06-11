@@ -1,5 +1,5 @@
-import Engine
+import App
 
-app = Engine.App()
+app = App.App()
 
 app.run()
